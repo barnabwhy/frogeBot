@@ -22,10 +22,21 @@ let { cmdFunc } = require("./" + musicCmdPath); // Gets function of music comman
 // On worker message (music command passthrough)
 parentPort.on("message", async (data) => {
   if (!isMainThread && ready) {
-    let { msgId, channelId, args, cmd } = data;
+    let { msgId, channelId, args, cmd, interaction } = data;
     try {
       let channel = await client.channels.fetch(channelId); // Get channel from ID
-      let msg = await channel.messages.fetch(msgId); // Get message from ID
+      let msg;
+      if (msgId) {
+        msg = await channel.messages.fetch(msgId); // Get message from ID
+      } else {
+        msg = {
+          client,
+          author: await client.users.fetch(interaction.member.user.id),
+          channel,
+          member: await channel.guild.members.fetch(interaction.member.user.id),
+          guild: channel.guild,
+        }; // Make a fake message object from ineraction data (supposedly message data will exis for interactions in future but for now this must be done)
+      }
       setImmediate(async () => {
         cmdFunc(msg, args, cmd.action); // Runs command function
       });
